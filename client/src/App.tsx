@@ -3,8 +3,7 @@ import axios from "axios";
 import Confetti from "react-confetti";
 import { generateUsername } from "unique-username-generator";
 import cn from "classnames";
-import { SadIcon, SmilyIcon } from "./assets";
-import html2canvas from "html2canvas";
+import { SadIcon, SmilyIcon, GuardO, GuardS, GuardT, GuardX } from "./assets";
 
 export type DestinationType = {
   id: string;
@@ -20,16 +19,24 @@ export type CurrentRespType = {
   username?: string;
 };
 
+export type InviteModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  currentResp: CurrentRespType | null;
+}
 
-// Modal Component
-const InviteModal = ({ isOpen, onClose, inviteUrl, shareImage }) => {
+
+const InviteModal = ({ isOpen, onClose, currentResp }: InviteModalProps) => {
   if (!isOpen) return null;
 
+  const guards = [GuardO, GuardS, GuardT, GuardX];
+  const RandomGuard = guards[Math.floor(Math.random() * guards.length)];
+  const inviteUrl = `${window.location.origin}/?invite=${currentResp?.username}`;
   return (
     <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
         <h2 className="text-xl text-black font-bold mb-4">Invite a Friend! 🎉</h2>
-        {shareImage && <img src={shareImage} alt="Invite Preview" className="w-full mb-4 rounded" />}
+        <RandomGuard className="m-auto" />
         <input
           type="text"
           value={inviteUrl}
@@ -56,32 +63,6 @@ const InviteModal = ({ isOpen, onClose, inviteUrl, shareImage }) => {
   );
 };
 
-
-const generateCanvasImage = (user: CurrentRespType) => {
-  console.log("Generating image for user:", user);
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  // Set canvas size
-  canvas.width = 500;
-  canvas.height = 250;
-
-  // Draw background
-  ctx.fillStyle = "#6a5acd";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Add text
-  ctx.fillStyle = "white";
-  ctx.font = "24px Arial";
-  ctx.fillText(`Username: ${user?.username}`, 100, 100);
-  ctx.fillText(`Score: ${user?.score || 0}`, 180, 150);
-
-  return canvas.toDataURL("image/png"); // Return image URL
-};
-
-
 const fetchDestination = async () => {
   try {
     const { data } = await axios.get("https://globetrotter-challenge-1-oiwc.onrender.com/api/destination");
@@ -105,15 +86,12 @@ const registerUser = async (userName: string) => {
 
 const App = () => {
   const [destination, setDestination] = useState<DestinationType | null>(null);
-  const [userName, setUserName] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [currentResp, setCurrentResp] = useState<CurrentRespType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [friendData, setFriendData] = useState<{ username: string; score: number } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState("");
-  const [shareImage, setShareImage] = useState("");
 
   useEffect(() => {
     const initializeGame = async () => {
@@ -124,11 +102,9 @@ const App = () => {
 
         // Generate and set a new username
         const newUserName = generateUsername();
-        setUserName(newUserName);
-
         // Register the new user and update their score
         const user = await registerUser(newUserName);
-        setCurrentResp((prev) => (prev ? { ...prev, ...user } : null));
+        setCurrentResp(user);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -147,7 +123,7 @@ const App = () => {
       const res = await axios.post<CurrentRespType>(
         "https://globetrotter-challenge-1-oiwc.onrender.com/api/answer",
         {
-          username: userName,
+          username: currentResp?.username,
           destination_id: destination.destination_id,
           answer: selectedAnswer,
         }
@@ -162,8 +138,9 @@ const App = () => {
   };
 
   const resetGame = async () => {
-    setUserName(generateUsername());
-    setCurrentResp((prev) => (prev ? { ...prev, score: 0 } : null));
+    const newUserName = generateUsername();
+    const user = await registerUser(newUserName);
+    setCurrentResp(user);
     setFriendData(null);
 
     // Removeing the invite parameter from the URL
@@ -185,23 +162,6 @@ const App = () => {
     }
     setIsLoading(false);
   };
-
-  const handleInvite = async () => {
-    const url = `${window.location.origin}/?invite=${userName}`;
-    setInviteUrl(url);
-    console.log('currentResp', currentResp);
-
-    const image = await generateCanvasImage({ ...currentResp, username: userName });
-    if (!image) {
-      alert("Failed to generate invite image. Try again!");
-      return;
-    }
-
-    setShareImage(image);
-    setIsModalOpen(true);
-  };
-
-
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -225,7 +185,7 @@ const App = () => {
       <div id="user-info" className="flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4">
         <div className="flex flex-col items-center sm:items-start">
           <p className="text-lg font-semibold">
-            👤 Username: <span className="text-blue-600 font-bold">{userName}</span>
+            👤 Username: <span className="text-blue-600 font-bold">{currentResp?.username}</span>
           </p>
           <p className="text-lg font-semibold">
             🏆 Score:{" "}
@@ -249,14 +209,13 @@ const App = () => {
       <InviteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        inviteUrl={inviteUrl}
-        shareImage={shareImage}
+        currentResp={currentResp}
       />
 
 
       {/* Challenge a Friend */}
       <button
-        onClick={handleInvite}
+        onClick={() => setIsModalOpen(true)}
         className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-3 px-6 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 my-4 font-semibold"
       >
         📩 Challenge a Friend
@@ -332,7 +291,7 @@ const App = () => {
           </button>
         </div>
       </div>
-    </div>
+    </div >
 
   );
 };
