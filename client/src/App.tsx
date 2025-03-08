@@ -22,42 +22,54 @@ export type CurrentRespType = {
 export type InviteModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  currentResp: CurrentRespType | null;
+  userName: string;
 }
 
 
-const InviteModal = ({ isOpen, onClose, currentResp }: InviteModalProps) => {
+const InviteModal = ({ isOpen, onClose, userName }: InviteModalProps) => {
   if (!isOpen) return null;
 
   const guards = [GuardO, GuardS, GuardT, GuardX];
   const RandomGuard = guards[Math.floor(Math.random() * guards.length)];
-  const inviteUrl = `${window.location.origin}/?invite=${currentResp?.username}`;
+  const inviteUrl = `${window.location.origin}/?invite=${userName}`;
   return (
-    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
-        <h2 className="text-xl text-black font-bold mb-4">Invite a Friend! 🎉</h2>
-        <RandomGuard className="m-auto" />
-        <input
-          type="text"
-          value={inviteUrl}
-          readOnly
-          className="border p-2 w-full text-center bg-amber-800 rounded mb-3"
-        />
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(inviteUrl);
-            alert("Link copied!");
-          }}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Copy Link
-        </button>
-        <button
-          onClick={onClose}
-          className="ml-3 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-        >
-          Close
-        </button>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md">
+      <div className="bg-white p-6 rounded-2xl shadow-xl text-center max-w-md w-full">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Invite a Friend! 🎉</h2>
+
+        {/* Guard Image */}
+        <div className="flex justify-center mb-4">
+          <RandomGuard className="w-40 h-40" />
+        </div>
+
+        {/* Invite Link Input */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            value={inviteUrl}
+            readOnly
+            className="w-full p-3 text-center text-gray-800 border border-gray-300 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(inviteUrl);
+              alert("Link copied!");
+            }}
+            className="bg-blue-500 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-blue-600 transition-all"
+          >
+            Copy Link
+          </button>
+          <button
+            onClick={onClose}
+            className="bg-gray-500 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-gray-600 transition-all"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -209,17 +221,17 @@ const App = () => {
       <InviteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        currentResp={currentResp}
+        userName={currentResp?.username || ""}
       />
 
 
       {/* Challenge a Friend */}
-      <button
+      {!isModalOpen && <button
         onClick={() => setIsModalOpen(true)}
         className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-3 px-6 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 my-4 font-semibold"
       >
         📩 Challenge a Friend
-      </button>
+      </button>}
 
 
       {/* Game Box */}
