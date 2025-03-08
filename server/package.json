@@ -18,8 +18,7 @@
     "start": "nodemon index.js",
     "seed": "node seed/index.js",
     "seed-question": "node seed/questions.js",
-    "seed-user": "node seed/users.js",
-    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client"
+    "seed-user": "node seed/users.js"
   },
   "keywords": [],
   "author": "",
