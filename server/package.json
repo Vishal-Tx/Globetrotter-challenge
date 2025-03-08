@@ -5,9 +5,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
-    "nodemon": "^3.1.9",
-    "openai": "^4.86.1",
-    "socket.io": "^4.8.1"
+    "nodemon": "^3.1.9"
   },
   "name": "backend",
   "version": "1.0.0",
