@@ -42,9 +42,9 @@ router.post("/answer", async (req, res) => {
    if (destination.city === answer) {
       user.score += 10;
       await user.save();
-      res.json({ correct: true, funFact: destination.funFacts[Math.floor(Math.random() * 2)], score: user.score });
+      res.json({ correct: true, funFact: destination.funFacts[Math.floor(Math.random() * 2)], ...user });
    } else {
-      res.json({ correct: false, funFact: destination.funFacts[Math.floor(Math.random() * 2)], score: user.score });
+      res.json({ correct: false, funFact: destination.funFacts[Math.floor(Math.random() * 2)], ...user });
    }
 });
 
@@ -68,7 +68,7 @@ router.get("/user/:username", async (req, res) => {
    try {
       console.log(req.params.username)
       const { username } = req.params;
-      
+
       const user = await User.findOne({ username });
       console.log(user)
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
