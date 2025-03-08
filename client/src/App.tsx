@@ -4,6 +4,7 @@ import Confetti from "react-confetti";
 import { generateUsername } from "unique-username-generator";
 import cn from "classnames";
 import { SadIcon, SmilyIcon, GuardO, GuardS, GuardT, GuardX } from "./assets";
+import { ToastContainer, toast } from 'react-toastify';
 
 export type DestinationType = {
   id: string;
@@ -34,6 +35,18 @@ const InviteModal = ({ isOpen, onClose, userName }: InviteModalProps) => {
   const inviteUrl = `${window.location.origin}/?invite=${userName}`;
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-md">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="bg-white p-6 rounded-2xl shadow-xl text-center max-w-md w-full">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Invite a Friend! 🎉</h2>
 
@@ -57,7 +70,7 @@ const InviteModal = ({ isOpen, onClose, userName }: InviteModalProps) => {
           <button
             onClick={() => {
               navigator.clipboard.writeText(inviteUrl);
-              alert("Link copied!");
+              toast.success("Link copied!");
             }}
             className="bg-blue-500 text-white px-5 py-2.5 rounded-lg shadow-md hover:bg-blue-600 transition-all"
           >
@@ -80,6 +93,7 @@ const fetchDestination = async () => {
     const { data } = await axios.get("https://globetrotter-challenge-1-oiwc.onrender.com/api/destination");
     return data;
   } catch (error) {
+    toast.error("Error fetching destination");
     throw new Error("Error fetching destination");
   }
 };
@@ -91,6 +105,7 @@ const registerUser = async (userName: string) => {
     return res.data.user;
   } catch (error) {
     console.error("Error registering user:", error);
+    toast.error("Error registering user");
     throw error;
   }
 };
@@ -118,6 +133,7 @@ const App = () => {
         setCurrentResp(user);
       } catch (error) {
         setError(error.message);
+        toast.error("Error initializing game");
       } finally {
         setIsLoading(false);
       }
@@ -143,22 +159,31 @@ const App = () => {
       setShowResult(true);
     } catch (error) {
       setError("Error submitting answer");
+      toast.error("Error submitting answer");
     } finally {
       setIsLoading(false);
     }
   };
 
   const resetGame = async () => {
+    setIsLoading(true);
     const newUserName = generateUsername();
     const user = await registerUser(newUserName);
+    try {
+      const { data } = await axios.get("https://globetrotter-challenge-1-oiwc.onrender.com/api/destination");
+      setDestination(data);
+    } catch (error) {
+      setError("Error fetching destination");
+    }
     setCurrentResp(user);
+    setShowResult(false);
     setFriendData(null);
 
     // Removeing the invite parameter from the URL
     const newUrl = window.location.origin + window.location.pathname;
     window.history.pushState({}, document.title, newUrl);
+    setIsLoading(false);
 
-    await handleNextAction();
   };
 
   const handleNextAction = async () => {
@@ -170,6 +195,7 @@ const App = () => {
       setDestination(data);
     } catch (error) {
       setError("Error fetching destination");
+      toast.error("Error fetching destination");
     }
     setIsLoading(false);
   };
@@ -183,7 +209,10 @@ const App = () => {
         .then(res => {
           setFriendData({ username: invitee, score: res.data.user.score });
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error(err);
+          toast.error("Error fetching friend data");
+        });
     }
   }, []);
 
@@ -193,7 +222,9 @@ const App = () => {
       {showResult && currentResp?.correct && <Confetti numberOfPieces={400} recycle={false} />}
 
       {/* User Info Section */}
-      <div id="user-info" className="flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4">
+      <div id="user-info" className={cn("flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4", {
+        "opacity-50 animate-pulse cursor-not-allowed": isLoading,
+      })}>
         <div className="flex flex-col items-center sm:items-start">
           <p className="text-lg font-semibold">
             👤 Username: <span className="text-blue-600 font-bold">{currentResp?.username}</span>

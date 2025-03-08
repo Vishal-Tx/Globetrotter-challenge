@@ -30,7 +30,7 @@
 - **Database**: MongoDB
 - **Styling**: Tailwind CSS
 - **Version Control**: Git
-- **Misc Libraries**: Classnames, react-confetti, unique-username-generator
+- **Misc Libraries**: classnames, react-confetti, unique-username-generator, react-toastify
 
 ## Running the Application
 
