@@ -15,7 +15,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js",
+    "start": "node index.js",
+    "build": "echo 'No build step needed'",
     "seed": "node seed/index.js",
     "seed-question": "node seed/questions.js",
     "seed-user": "node seed/users.js"
