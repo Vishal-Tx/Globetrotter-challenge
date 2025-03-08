@@ -87,7 +87,6 @@ const fetchDestination = async () => {
 const registerUser = async (userName: string) => {
   try {
     const res = await axios.post("https://globetrotter-challenge-1-oiwc.onrender.com/api/register", { username: userName });
-    console.log("User registered successfully:", res);
 
     return res.data.user;
   } catch (error) {
