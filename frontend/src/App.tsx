@@ -16,70 +16,68 @@ export type CurrentRespType = {
   correct: boolean;
   funFact: string;
   score: number;
-}
+};
 
 const App = () => {
   const [destination, setDestination] = useState<DestinationType | null>(null);
   const [userName, setUserName] = useState("");
   const [showResult, setShowResult] = useState(false);
-  const [currentResp, setCurrentResp] = useState<CurrentRespType | null>(null)
+  const [currentResp, setCurrentResp] = useState<CurrentRespType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      await fetchDestination();
+      try {
+        const { data } = await axios.get("http://localhost:5000/api/destination");
+        setDestination(data);
+      } catch (error) {
+        setError("Error fetching destination");
+      }
       setUserName(generateUsername());
       setIsLoading(false);
     };
     fetchData();
   }, []);
 
-  const fetchDestination = async () => {
+  const submitAnswer = async (selectedAnswer: string) => {
+    if (!destination) return;
+    setIsLoading(true);
+
+    try {
+      const res = await axios.post<CurrentRespType>(
+        "http://localhost:5000/api/answer",
+        {
+          username: userName,
+          destination_id: destination.destination_id,
+          answer: selectedAnswer,
+        }
+      );
+      setCurrentResp(res.data);
+      setShowResult(true);
+    } catch (error) {
+      setError("Error submitting answer");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetGame = async () => {
+    setUserName(generateUsername());
+    setCurrentResp((prev) => (prev ? { ...prev, score: 0 } : null));
+    await handleNextAction();
+  };
+
+  const handleNextAction = async () => {
+    setIsLoading(true);
+    setCurrentResp((prev) => (prev ? { ...prev, correct: false, funFact: '' } : null));
+    setShowResult(false);
     try {
       const { data } = await axios.get("http://localhost:5000/api/destination");
       setDestination(data);
     } catch (error) {
       setError("Error fetching destination");
     }
-  };
-
-  const submitAnswer = async (selectedAnswer: string) => {
-    if (!destination) return;
-    setIsLoading(true);
-
-    const res = await axios.post<CurrentRespType>(
-      "http://localhost:5000/api/answer",
-      {
-        username: userName,
-        destination_id: destination.destination_id,
-        answer: selectedAnswer,
-      }
-    );
-
-    setCurrentResp(res.data)
-    setShowResult(true);
-    setIsLoading(false);
-  };
-
-  const resetGame = async () => {
-    setUserName(generateUsername());
-    setCurrentResp(prev => prev ? {
-      ...prev,
-      score: 0,
-    } : null);
-    await handleNextAction();
-  };
-
-  const handleNextAction = async () => {
-    setIsLoading(true);
-    setCurrentResp(prev => prev ? {
-      ...prev,
-      correct: false,
-      funFact: ''
-    } : null);
-    setShowResult(false);
-    await fetchDestination();
     setIsLoading(false);
   };
 
