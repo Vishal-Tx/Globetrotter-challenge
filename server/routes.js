@@ -42,9 +42,9 @@ router.post("/answer", async (req, res) => {
    if (destination.city === answer) {
       user.score += 10;
       await user.save();
-      res.json({ correct: true, funFact: destination.funFacts[Math.floor(Math.random() * 2)], ...user });
+      res.json({ correct: true, funFact: destination.funFacts[Math.floor(Math.random() * 2)], score: user.score, username: user.username });
    } else {
-      res.json({ correct: false, funFact: destination.funFacts[Math.floor(Math.random() * 2)], ...user });
+      res.json({ correct: false, funFact: destination.funFacts[Math.floor(Math.random() * 2)], score: user.score, username: user.username });
    }
 });
 
