@@ -84,7 +84,7 @@ const generateCanvasImage = (user: CurrentRespType) => {
 
 const fetchDestination = async () => {
   try {
-    const { data } = await axios.get("http://localhost:5000/api/destination");
+    const { data } = await axios.get("https://globetrotter-challenge-1-oiwc.onrender.com/api/destination");
     return data;
   } catch (error) {
     throw new Error("Error fetching destination");
@@ -93,7 +93,7 @@ const fetchDestination = async () => {
 
 const registerUser = async (userName: string) => {
   try {
-    const res = await axios.post("http://localhost:5000/api/register", { username: userName });
+    const res = await axios.post("https://globetrotter-challenge-1-oiwc.onrender.com/api/register", { username: userName });
     console.log("User registered successfully:", res);
 
     return res.data.user;
@@ -145,7 +145,7 @@ const App = () => {
 
     try {
       const res = await axios.post<CurrentRespType>(
-        "http://localhost:5000/api/answer",
+        "https://globetrotter-challenge-1-oiwc.onrender.com/api/answer",
         {
           username: userName,
           destination_id: destination.destination_id,
@@ -178,7 +178,7 @@ const App = () => {
     setCurrentResp((prev) => (prev ? { ...prev, correct: false, funFact: '' } : null));
     setShowResult(false);
     try {
-      const { data } = await axios.get("http://localhost:5000/api/destination");
+      const { data } = await axios.get("https://globetrotter-challenge-1-oiwc.onrender.com/api/destination");
       setDestination(data);
     } catch (error) {
       setError("Error fetching destination");
@@ -208,7 +208,7 @@ const App = () => {
     const invitee = params.get("invite");
 
     if (invitee) {
-      axios.get(`http://localhost:5000/api/user/${invitee}`)
+      axios.get(`https://globetrotter-challenge-1-oiwc.onrender.com/api/user/${invitee}`)
         .then(res => {
           setFriendData({ username: invitee, score: res.data.user.score });
         })
