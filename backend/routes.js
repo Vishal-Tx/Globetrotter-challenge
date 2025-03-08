@@ -2,7 +2,6 @@ import express from "express";
 import { Destination, User, Question } from "./models.js";
 
 const router = express.Router();
-
 router.get("/destination", async (req, res) => {
 
    const allDestinations = await Destination.find();
@@ -38,7 +37,7 @@ router.post("/answer", async (req, res) => {
    const destination = await Destination.findOne({_id:destination_id})
 
    if (destination.city === answer) {
-      user.score += 1;
+      user.score += 10;
       await user.save();
       res.json({ correct: true, funFact: destination.funFacts[Math.floor(Math.random()*2)], score: user.score });
    } else {
