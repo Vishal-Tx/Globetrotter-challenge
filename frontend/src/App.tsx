@@ -16,6 +16,28 @@ export type CurrentRespType = {
   correct: boolean;
   funFact: string;
   score: number;
+  username?: string;
+};
+
+const fetchDestination = async () => {
+  try {
+    const { data } = await axios.get("http://localhost:5000/api/destination");
+    return data;
+  } catch (error) {
+    throw new Error("Error fetching destination");
+  }
+};
+
+const registerUser = async (userName: string) => {
+  try {
+    const res = await axios.post("http://localhost:5000/api/register", { username: userName });
+    console.log("User registered successfully:", res);
+
+    return res.data.user;
+  } catch (error) {
+    console.error("Error registering user:", error);
+    throw error;
+  }
 };
 
 const App = () => {
@@ -25,19 +47,30 @@ const App = () => {
   const [currentResp, setCurrentResp] = useState<CurrentRespType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [friendData, setFriendData] = useState<{ username: string; score: number } | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const initializeGame = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/destination");
-        setDestination(data);
+        // Fetch destination data
+        const destinationData = await fetchDestination();
+        setDestination(destinationData);
+
+        // Generate and set a new username
+        const newUserName = generateUsername();
+        setUserName(newUserName);
+
+        // Register the new user and update their score
+        const user = await registerUser(newUserName);
+        setCurrentResp((prev) => (prev ? { ...prev, ...user } : null));
       } catch (error) {
-        setError("Error fetching destination");
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
       }
-      setUserName(generateUsername());
-      setIsLoading(false);
     };
-    fetchData();
+
+    initializeGame();
   }, []);
 
   const submitAnswer = async (selectedAnswer: string) => {
@@ -65,6 +98,12 @@ const App = () => {
   const resetGame = async () => {
     setUserName(generateUsername());
     setCurrentResp((prev) => (prev ? { ...prev, score: 0 } : null));
+    setFriendData(null);
+
+    // Removeing the invite parameter from the URL
+    const newUrl = window.location.origin + window.location.pathname;
+    window.history.pushState({}, document.title, newUrl);
+
     await handleNextAction();
   };
 
@@ -81,26 +120,60 @@ const App = () => {
     setIsLoading(false);
   };
 
+  const handleInvite = () => {
+    const inviteUrl = `${window.location.origin}/?invite=${userName}`;
+    const message = `🚀 I scored ${currentResp?.score || 0} in The Globetrotter Challenge! Can you beat me? 🌍 Play now: ${inviteUrl}`;
+
+    // Open WhatsApp Share
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const invitee = params.get("invite");
+
+    if (invitee) {
+      axios.get(`http://localhost:5000/api/user/${invitee}`)
+        .then(res => {
+          setFriendData({ username: invitee, score: res.data.user.score });
+        })
+        .catch(err => console.error(err));
+    }
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 via-purple-600 to-pink-500 text-white p-6">
       {isLoading && <p className="text-xl font-semibold animate-pulse">Loading...</p>}
       {showResult && currentResp?.correct && <Confetti numberOfPieces={400} recycle={false} />}
 
       {/* User Info Section */}
-      <div className="flex justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300">
-        <p className="text-lg font-semibold">
-          👤 Username: <span className="text-blue-600 font-bold">{userName}</span>
-        </p>
-        <p className="text-lg font-semibold">
-          🏆 Score:{" "}
-          <span className="bg-green-500 text-white px-3 py-1 rounded-lg font-bold shadow-md transition-all duration-300 hover:shadow-xl">
-            {currentResp?.score || 0}
-          </span>
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4">
+        <div className="flex flex-col items-center sm:items-start">
+          <p className="text-lg font-semibold">
+            👤 Username: <span className="text-blue-600 font-bold">{userName}</span>
+          </p>
+          <p className="text-lg font-semibold">
+            🏆 Score:{" "}
+            <span className="bg-green-500 text-white px-3 py-1 rounded-lg font-bold shadow-md transition-all duration-300 hover:shadow-xl">
+              {currentResp?.score || 0}
+            </span>
+          </p>
+        </div>
+
+        {friendData && (
+          <div className="flex flex-col items-center sm:items-start bg-yellow-200 text-gray-900 px-4 py-2 rounded-xl shadow-md">
+            <p className="text-lg font-semibold">
+              👥 Friend's Score: <span className="text-green-600 font-bold">{friendData.score}</span>
+            </p>
+            <p className="text-md">Challenged by <span className="font-bold">{friendData.username}</span>!</p>
+          </div>
+        )}
       </div>
+
 
       {/* Challenge a Friend */}
       <button
+        onClick={handleInvite}
         className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-3 px-6 rounded-2xl shadow-lg hover:scale-105 transition-all duration-300 my-4 font-semibold"
       >
         📩 Challenge a Friend
