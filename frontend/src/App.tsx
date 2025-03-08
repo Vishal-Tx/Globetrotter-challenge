@@ -3,7 +3,7 @@ import axios from "axios";
 import Confetti from "react-confetti";
 import { generateUsername } from "unique-username-generator";
 import cn from "classnames";
-import { SadIcon } from "./assets";
+import { SadIcon, SmilyIcon } from "./assets";
 
 export type DestinationType = {
   id: string;
@@ -12,13 +12,19 @@ export type DestinationType = {
   options: string[];
 };
 
+export type CurrentRespType = {
+  correct: boolean;
+  funFact: string;
+  score: number;
+}
+
 const App = () => {
   const [destination, setDestination] = useState<DestinationType | null>(null);
   const [userName, setUserName] = useState("");
   const [showResult, setShowResult] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [funFact, setFunFact] = useState("");
+  const [currentResp, setCurrentResp] = useState<CurrentRespType | null>(null)
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,35 +36,49 @@ const App = () => {
   }, []);
 
   const fetchDestination = async () => {
-    const res = await axios.get("http://localhost:5000/api/destination");
-    setDestination(res.data);
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/destination");
+      setDestination(data);
+    } catch (error) {
+      setError("Error fetching destination");
+    }
   };
 
   const submitAnswer = async (selectedAnswer: string) => {
     if (!destination) return;
+    setIsLoading(true);
 
-    const res = await axios.post("http://localhost:5000/api/answer", {
-      username: userName,
-      destination_id: destination.destination_id,
-      answer: selectedAnswer,
-    });
+    const res = await axios.post<CurrentRespType>(
+      "http://localhost:5000/api/answer",
+      {
+        username: userName,
+        destination_id: destination.destination_id,
+        answer: selectedAnswer,
+      }
+    );
 
-    setIsCorrect(res.data.correct);
-    setFunFact(res.data.funFact);
+    setCurrentResp(res.data)
     setShowResult(true);
+    setIsLoading(false);
   };
 
   const resetGame = async () => {
     setUserName(generateUsername());
+    setCurrentResp(prev => prev ? {
+      ...prev,
+      score: 0,
+    } : null);
     await handleNextAction();
-    // await fetchDestination();
   };
 
   const handleNextAction = async () => {
     setIsLoading(true);
-    setIsCorrect(false);
+    setCurrentResp(prev => prev ? {
+      ...prev,
+      correct: false,
+      funFact: ''
+    } : null);
     setShowResult(false);
-    setFunFact("");
     await fetchDestination();
     setIsLoading(false);
   };
@@ -66,15 +86,32 @@ const App = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 text-white p-6">
       {isLoading && <p className="text-xl font-semibold animate-pulse">Loading...</p>}
-      {showResult && isCorrect && <Confetti />}
+      {showResult && currentResp?.correct && <Confetti />}
 
-      <div className={cn("bg-white text-gray-800 rounded-xl shadow-lg p-8 max-w-lg w-full text-center ", {
-        "opacity-50 animate-pulse cursor-not-allowed": isLoading
-      })}>
+      {/* User Info Section */}
+      <div className="flex justify-between items-center w-full max-w-lg mb-6 bg-white text-gray-800 px-6 py-4 rounded-xl shadow-md">
+        <p className="text-lg font-semibold">
+          👤 Username: <span className="text-blue-600 font-bold">{userName}</span>
+        </p>
+        <p className="text-lg font-semibold">
+          🏆 Score:{" "}
+          <span className="bg-green-500 text-white px-3 py-1 rounded-lg font-bold">{currentResp?.score || 0}</span>
+        </p>
+      </div>
+
+      {/* Game Box */}
+      <div
+        className={cn(
+          "bg-white text-gray-800 rounded-xl shadow-lg p-8 max-w-lg w-full text-center",
+          {
+            "opacity-50 animate-pulse cursor-not-allowed": isLoading,
+          }
+        )}
+      >
         <h1 className="text-3xl font-bold mb-4">🌍 Guess the Destination!</h1>
-
+        {error && <p className="text-red-600 font-semibold">{error}</p>}
         {destination && (
-          <div className="mb-6">
+          <div className="mb-6 flex flex-col items-start">
             <p className="text-lg font-medium">🕵️ Clue 1: {destination.clues[0]}</p>
             <p className="text-lg font-medium">🕵️ Clue 2: {destination.clues[1]}</p>
           </div>
@@ -92,9 +129,24 @@ const App = () => {
           ))}
         </div>
 
-        <SadIcon className="h-16" />
-        {showResult && <p className="text-lg font-semibold text-green-600">{funFact}</p>}
+        {/* Result Messages */}
+        {!currentResp?.correct && showResult && (
+          <div className="flex flex-col items-center gap-2">
+            <SadIcon className="h-16" />
+            <span className="text-lg font-medium text-red-600">Wrong Answer</span>
+          </div>
+        )}
 
+        {currentResp?.correct && showResult && (
+          <div className="flex flex-col items-center gap-2">
+            <SmilyIcon className="h-16" />
+            <span className="text-lg font-medium text-green-800">Hurray! Correct Answer</span>
+          </div>
+        )}
+
+        {showResult && <p className="text-lg font-semibold text-green-600">{currentResp?.funFact}</p>}
+
+        {/* Action Buttons */}
         <div className="flex justify-center gap-4 mt-6">
           <button
             onClick={resetGame}
