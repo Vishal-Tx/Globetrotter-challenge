@@ -4,6 +4,7 @@ import Confetti from "react-confetti";
 import { generateUsername } from "unique-username-generator";
 import cn from "classnames";
 import { SadIcon, SmilyIcon } from "./assets";
+import html2canvas from "html2canvas";
 
 export type DestinationType = {
   id: string;
@@ -18,6 +19,68 @@ export type CurrentRespType = {
   score: number;
   username?: string;
 };
+
+
+// Modal Component
+const InviteModal = ({ isOpen, onClose, inviteUrl, shareImage }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
+        <h2 className="text-xl text-black font-bold mb-4">Invite a Friend! 🎉</h2>
+        {shareImage && <img src={shareImage} alt="Invite Preview" className="w-full mb-4 rounded" />}
+        <input
+          type="text"
+          value={inviteUrl}
+          readOnly
+          className="border p-2 w-full text-center bg-amber-800 rounded mb-3"
+        />
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(inviteUrl);
+            alert("Link copied!");
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Copy Link
+        </button>
+        <button
+          onClick={onClose}
+          className="ml-3 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+const generateCanvasImage = (user: CurrentRespType) => {
+  console.log("Generating image for user:", user);
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // Set canvas size
+  canvas.width = 500;
+  canvas.height = 250;
+
+  // Draw background
+  ctx.fillStyle = "#6a5acd";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Add text
+  ctx.fillStyle = "white";
+  ctx.font = "24px Arial";
+  ctx.fillText(`Username: ${user?.username}`, 100, 100);
+  ctx.fillText(`Score: ${user?.score || 0}`, 180, 150);
+
+  return canvas.toDataURL("image/png"); // Return image URL
+};
+
 
 const fetchDestination = async () => {
   try {
@@ -48,6 +111,9 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [friendData, setFriendData] = useState<{ username: string; score: number } | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [shareImage, setShareImage] = useState("");
 
   useEffect(() => {
     const initializeGame = async () => {
@@ -120,13 +186,22 @@ const App = () => {
     setIsLoading(false);
   };
 
-  const handleInvite = () => {
-    const inviteUrl = `${window.location.origin}/?invite=${userName}`;
-    const message = `🚀 I scored ${currentResp?.score || 0} in The Globetrotter Challenge! Can you beat me? 🌍 Play now: ${inviteUrl}`;
+  const handleInvite = async () => {
+    const url = `${window.location.origin}/?invite=${userName}`;
+    setInviteUrl(url);
+    console.log('currentResp', currentResp);
 
-    // Open WhatsApp Share
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+    const image = await generateCanvasImage({ ...currentResp, username: userName });
+    if (!image) {
+      alert("Failed to generate invite image. Try again!");
+      return;
+    }
+
+    setShareImage(image);
+    setIsModalOpen(true);
   };
+
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -147,7 +222,7 @@ const App = () => {
       {showResult && currentResp?.correct && <Confetti numberOfPieces={400} recycle={false} />}
 
       {/* User Info Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4">
+      <div id="user-info" className="flex flex-col sm:flex-row justify-between items-center w-full max-w-lg bg-white text-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-300 gap-4">
         <div className="flex flex-col items-center sm:items-start">
           <p className="text-lg font-semibold">
             👤 Username: <span className="text-blue-600 font-bold">{userName}</span>
@@ -171,6 +246,14 @@ const App = () => {
       </div>
 
 
+      <InviteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        inviteUrl={inviteUrl}
+        shareImage={shareImage}
+      />
+
+
       {/* Challenge a Friend */}
       <button
         onClick={handleInvite}
@@ -178,6 +261,7 @@ const App = () => {
       >
         📩 Challenge a Friend
       </button>
+
 
       {/* Game Box */}
       <div className={cn("bg-white text-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center border border-gray-200", {
