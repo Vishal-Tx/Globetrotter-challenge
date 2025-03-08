@@ -13,7 +13,7 @@ db.once("open", () => {
   console.log("Database connected");
 });
 
-const enrichDatabase = async () => {
+const seedDatabase = async () => {
   try {
     await Destination.deleteMany({});
     for (const item of data) {
@@ -32,4 +32,4 @@ const enrichDatabase = async () => {
   }
 };
 
-await enrichDatabase();
+await seedDatabase();

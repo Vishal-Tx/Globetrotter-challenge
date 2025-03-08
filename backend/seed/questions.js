@@ -13,7 +13,7 @@ db.once("open", () => {
   console.log("Database connected");
 });
 
-const enrichDatabase = async () => {
+const seedDatabase = async () => {
   try {
     await Question.deleteMany({});
    const allDestinations = await Destination.find();
@@ -31,4 +31,4 @@ const enrichDatabase = async () => {
   }
 };
 
-await enrichDatabase();
+await seedDatabase();
