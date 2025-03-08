@@ -1,13 +1,13 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.12",
